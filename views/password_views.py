@@ -21,6 +21,14 @@ class FernetHasher:
 
     @classmethod
     def create_key(cls, archive: bool = False):
+        """
+        Args:
+            archive (bool): Se `True`, salva a chave em um arquivo no diretório `keys`.
+                            Caso contrário, a chave é apenas retornada sem ser armazenada.
+        Returns:
+            tuple: Retorna uma tupla com a chave gerada (`bytes`) e o caminho do arquivo (`Path`) onde a chave foi arquivada,
+                    ou `None` se `archive` for `False`.
+        """
         value = cls._get_random_string()
         hasher = hashlib.sha256(value.encode('utf-8')).digest()
         key = base64.b64encode(hasher)
