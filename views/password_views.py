@@ -1,8 +1,8 @@
-from shutil import which
 import string, secrets
 import hashlib
 import base64
 from pathlib import Path
+from typing import Union
 from cryptography.fernet import Fernet, InvalidToken
 
 class FernetHasher:
@@ -10,10 +10,21 @@ class FernetHasher:
     BASE_DIR = Path(__file__).resolve().parent.parent
     KEY_DIR = BASE_DIR / 'keys'
 
-    def __init__(self, key):
-        if not isinstance(key, bytes):
-            key = key.encode()
-        self.fernet = Fernet(key=key)
+    def __init__(self, key: str):
+        """
+        Inicializa o FernetHasher com uma chave.
+        
+        Args:
+            key (Union[str, bytes, bytearray, memoryview]): Chave de criptografia
+        """
+        if isinstance(key, (bytes, bytearray, memoryview)):
+            key_bytes = bytes(key)
+        else:
+            key_bytes = key.encode()
+        try:
+            self.fernet = Fernet(key_bytes)
+        except Exception as e:
+            raise ValueError("Chave de criptografia inválida") from e
 
     @classmethod
     def _get_random_string(cls, length: int = 25) -> str:
@@ -37,7 +48,7 @@ class FernetHasher:
         return key, None
 
     @classmethod
-    def archive_key(cls, key):
+    def archive_key(cls, key: bytes) -> Path:
         file = 'key.key'
         while Path(cls.KEY_DIR / file).exists():
             file = f'key_{cls._get_random_string(5)}.key'
@@ -45,15 +56,16 @@ class FernetHasher:
             arq.write(key)
         return cls.BASE_DIR / file
 
-    def encrypt(self, value):
-        if not isinstance(value, bytes):
+    def encrypt(self, value: Union[str, bytes]) -> bytes:
+        if isinstance(value, str):
             value = value.encode()
         return self.fernet.encrypt(value)
 
-    def decrypt(self, value):
-        if not isinstance(value, bytes):
+    def decrypt(self, value: Union[str, bytes]) -> str:
+        if isinstance(value, str):
             value = value.encode()
         try:
             return self.fernet.decrypt(value).decode()
-        except InvalidToken as e:
+        except InvalidToken:
             return 'Token inválido'
+
